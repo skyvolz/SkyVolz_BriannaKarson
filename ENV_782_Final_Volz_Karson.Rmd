@@ -6,7 +6,15 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+
+here()
+
+CA_fires <- read_csv(file=here("Data/raw/California_Historic_Fire_Perimeters_1516624541847049096.csv"))
+
+CA_fires$`Alarm Date` <- ymd_hms(CA_fires$`Alarm Date`)
+
 ```
 
 ## R Markdown
