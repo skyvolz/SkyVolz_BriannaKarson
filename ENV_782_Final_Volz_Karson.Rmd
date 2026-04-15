@@ -5,34 +5,125 @@ date: "2026-04-02"
 output: pdf_document
 ---
 
+\tableofcontents
+\listoffigures
+
+##Rationale and Introductions
+
+Wildfires are a pressing environmental challenge in California that has been exacerbated by decades of fire suppression, increasing drought conditions, and a changing climate. This dataset contains wildfire data for the past 75 years, offering a unique glimpse into how fire patterns have shifted over time. This report focuses on how climate change has impacted wildfires, with increasingly intense droughts contributing to larger fires, or with increased frequency of storms potentially causing more fires via lightning striking dry fire fuels. By providing statistical evidence that wildfire or lightning strike intensity has increased over time, this research can inform policy recommendations, ideally encouraging more proactive fire management strategies such as prescribed burning to reduce fuels.
+
+##Research Questions
+1. Has the size of California wildfire burn areas of changed over time?
+2. Has the frequency of California wildfires caused by lightning strikes changed over time?
+
+##Dataset Information
+This dataset is sourced from the California Natural Resources Agency GIS database and is serviced by the California Department of Forestry and Fire Protection’s  CAL FIRE eGIS. It includes layers that subset from the larger dataset according to year the fire occurred, and size of the burn area in acres. It contains 17,540 records, spanning from the 1950s to May 9, 2025. It is a publicly available feature layer and was last updated on May 9, 2025.
+
 ```{r setup, include=FALSE}
+#loading packages 
 library(tidyverse)
+library(dplyr)
 library(here)
 
+#set working directory
 here()
+```
 
-CA_fires <- read_csv(file=here("Data/raw/California_Historic_Fire_Perimeters_1516624541847049096.csv"))
+```{r data wrangling, include=FALSE}
+#reading in data
+CA_fires <- read.csv(file=here(
+  "Data/raw/California_Historic_Fire_Perimeters_1516624541847049096.csv"), 
+  colClasses = c('Cause' = 'factor',
+                 'Collection.Method' = 'factor',
+                 'Management.Objective' = 'factor',
+                 'State' = 'factor',
+                 'Agency' = 'factor',
+                 'Unit.ID' = 'factor'))
 
-CA_fires$`Alarm Date` <- ymd_hms(CA_fires$`Alarm Date`)
+#formatting date columns
+CA_fires$Alarm.Date <- mdy_hms(CA_fires$Alarm.Date)
+CA_fires$Containment.Date <- mdy_hms(CA_fires$Containment.Date)
+
+CA_fires <- CA_fires %>%
+  mutate(Cause = recode(Cause, 
+                        "1" = "Lightning",
+                        "2" = "Equipment Use",
+                        "3" = "Smoking",
+                        "4" = "Campfire",
+                        "5" = "Debris",
+                        "6" = "Railroad",
+                        "7" = "Arson",
+                        "8" = "Playing With Fire",
+                        "9" = "Miscellaneous",
+                        "10" = "Vehicle",
+                        "11" = "Powerline",
+                        "12" = "Firefighter Training",
+                        "13" = "Non-Firefighter Training",
+                        "14" = "Unidentified",
+                        "15" = "Structure",
+                        "16" = "Aircraft",
+                        "17" = "Volcanic",
+                        "18" = "Escaped Prescribed Burn",
+                        "19" = "Illegal Alien Campfire"
+                        ))
+```
+
+##Exploratory Data Analysis
+```{r theme set}
+#I'm not sure if you have preferences for theme, but we should set it here so that all the plots match
+```
+
+```{r histogram of fire counts}
+#I was just messing around, let me know what you think of this! And the colors!
+fire_count_plot <- CA_fires %>%
+  ggplot(aes(x = Year)) + 
+  labs( x = "Year",
+        y = "Number of Fires",
+        title = "Changes in Fire Occurence Over Time") + 
+  geom_histogram(binwidth = 1,
+                 fill = 'sienna3',
+                 color = 'darkred') + 
+  scale_x_continuous(n.breaks = 7)
+
+print(fire_count_plot)
+```
+
+```{r histogram of fire burn areas}
 
 ```
 
-## R Markdown
+```{r box plots of fire causes}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r mapview}
+# visualize overlapping fire areas using symbology to show where fires are concentrated
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+##Hypotheses
+We will write our hypotheses here
+
+##Analysis
+We will state our methods here
+```{r burn acreage time series}
+
+#Time Series Analysis: How has the burn acreage of wildfires changed over time?
+  #Area as the dependent variable
+  #Decomposition and trend analysis
+```
+
+```{r lightning time series}
+
+#Time Series Analysis: Has the frequency or intensity of fires caused by lightning strikes changed over time?
+  #Dependent variable is the count of lightning strikes
+  #Decomposition and trend analysis
+```
+
+##Summary and Conclusions
+#Results
+#Discussion
+#Limitations
+see “Use Limitation” section in metadata
+
+##References
+Remember to cite dataset here 
