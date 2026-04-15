@@ -71,6 +71,11 @@ CA_fires <- CA_fires %>%
 ##Exploratory Data Analysis
 ```{r theme set}
 #I'm not sure if you have preferences for theme, but we should set it here so that all the plots match
+
+mytheme <- theme_minimal(base_size = 12) +
+  theme(axis.text = element_text(color = "black"),legend.position = "top", 
+        plot.title = element_text(face = "bold"))
+theme_set(mytheme)
 ```
 
 ```{r histogram of fire counts}
@@ -89,7 +94,10 @@ print(fire_count_plot)
 ```
 
 ```{r histogram of fire burn areas}
-
+fire_size_plot <- CA_fires %>% 
+  ggplot(aes(y=GIS.Calculated.Acres, x=Year)) + 
+  geom_point(color = 'darkred') + 
+  labs(y="Burn Acreage Calculated in GIS")
 ```
 
 ```{r box plots of fire causes}
