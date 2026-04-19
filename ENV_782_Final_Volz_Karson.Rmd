@@ -86,22 +86,41 @@ fire_count_plot <- CA_fires %>%
         y = "Number of Fires",
         title = "Changes in Fire Occurence Over Time") + 
   geom_histogram(binwidth = 1,
-                 fill = 'sienna3',
+                 fill = 'firebrick3',
                  color = 'darkred') + 
   scale_x_continuous(n.breaks = 7)
 
 print(fire_count_plot)
 ```
 
-```{r histogram of fire burn areas}
+```{r scatter plot of fire burn size}
 fire_size_plot <- CA_fires %>% 
   ggplot(aes(y=GIS.Calculated.Acres, x=Year)) + 
-  geom_point(color = 'darkred') + 
-  labs(y="Burn Acreage Calculated in GIS")
+  geom_point(fill = 'firebrick3', color = 'darkred', alpha = 0.5) + 
+  #idk was just trying stuff with the colors
+  labs(y="Burn Acreage Calculated in GIS") + 
+  ylim(0,500000)  # I set limits to remove outliers, but do we want the outliers there? 
+
+#also tried to add a trend line but because of how many small fires there are it was just flat parallel to the x axis
+
+print(fire_size_plot)
 ```
 
 ```{r box plots of fire causes}
+fire_cause_plot <- CA_fires %>% 
+  ggplot(aes(y=Cause, x=Year, color = 'darkred')) + 
+  geom_boxplot() + 
+  labs(y="Cause of Fire", 
+       x="Year",
+       title = "Changes in Frequency of Fire Causes Over Time") + 
+  theme(legend.position = "none")
+print(fire_cause_plot)
 
+#I tried to get the colors to match the histogram and it wont work and I don't know why
+
+#should we exclude miscellaneous, illegal alien campfire (what?!), and unidentified ? 
+
+#or maybe we can only show the the top 5 (for example, non-firefighter training and firefighter training seem sort of random and unnecessary) #or we can exclude those too? I feel like anything is fine as long we we justify why we did it
 ```
 
 ```{r mapview}
