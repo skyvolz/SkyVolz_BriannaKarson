@@ -10,7 +10,7 @@ output: pdf_document
 
 # Rationale and Introductions
 
-Wildfires are a pressing environmental challenge in California that has been exacerbated by decades of fire suppression, increasing drought conditions, and a changing climate. This dataset contains wildfire data for the past 75 years, offering a unique glimpse into how fire patterns have shifted over time. This report focuses on how climate change has impacted wildfires, with increasingly intense droughts contributing to larger fires, or with increased frequency of storms potentially causing more fires via lightning striking dry fire fuels. By providing statistical evidence that wildfire or lightning strike intensity has increased over time, this research can inform policy recommendations, ideally encouraging more proactive fire management strategies such as prescribed burning to reduce fuels.
+Wildfires present a pressing environmental challenge in California that has been exacerbated by decades of fire suppression, increasing drought conditions, and a changing climate. This dataset contains wildfire data from the past 75 years, offering a unique glimpse into how fire patterns have shifted over time. This report focuses on how climate change has impacted wildfires, with increasingly intense droughts contributing to larger fires, or with increased frequency of storms causing more and more fires due to lightning striking dry fuels. By providing statistical evidence that wildfire and lightning strike intensity has increased over time, this research can inform policy recommendations, ideally encouraging more proactive fire management strategies to mitigate threats to Californian landscapes. 
 
 # Research Questions
 
@@ -26,12 +26,15 @@ This dataset is sourced from the California Natural Resources Agency GIS databas
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
 #loading packages 
 library(tidyverse)
 library(dplyr)
 library(here)
 library(sf)
 library(ggplot2)
+library(scales)
+library(ggbeeswarm)
 
 #set working directory
 here()
@@ -78,25 +81,28 @@ CA_fires <- CA_fires %>%
 
 #reading in shapefile
 fires_shapefile <- st_read("Data/raw/California_Fire_Perimeters_(1950+).shp")
+#for some reason I can't access this #it's not in the folder for me
 
 #save this processed data table to processed folder - idk why this wont work
-#write.csv(CA_fires, file=here("/home/Workspace/Gits/SkyVolz_BriannaKarson/Data/processed"))
+write.csv(CA_fires, file=here("/home/Workspace/Gits/SkyVolz_BriannaKarson/Data/processed"))
+# I can't get it to work either, maybe we consult w John
 ```
 
 # Exploratory Data Analysis
 
 Our first step was to look at the data to look for any overall trends or notable patterns, to better inform our analysis. The following plots reveal how the fire sizes and frequency have occurred throughout the past 75 years, as well as what the top five fire causes are. 
 
-```{r theme set}
-mytheme <- theme_minimal(base_size = 12) +
+```{r theme set, include = FALSE}
+mytheme <- theme_bw(base_size = 12) +
   theme(axis.text = element_text(color = "black"),legend.position = "top", 
         plot.title = element_text(face = "bold"))
 theme_set(mytheme)
 
-#should we hide this code?
+#should we hide this code? 
+  #yes! I think I hid it
 ```
 
-```{r}
+```{r data summary, include = TRUE}
 #View dimensions, column names, variable type, and head of each column:
 str(CA_fires)
 
@@ -118,18 +124,29 @@ print(fire_count_plot)
 ```
 
 ```{r scatter plot of fire burn size, fig.cap = "Burn Size (Acres) by Year"}
+
+options(scipen = 999) #this command keeps the y axis from switching into scientific notation
+
 fire_size_plot <- CA_fires %>% 
   ggplot(aes(y=GIS.Calculated.Acres, x=Year)) + 
   geom_point(fill = 'firebrick3', color = 'darkred', alpha = 0.5) + 
-  #idk was just trying stuff with the colors
-  labs(y="Burn Acreage Calculated in GIS", title = "Burn Size (Acres) by Year") + 
-  ylim(0,500000)  
+  scale_y_continuous(labels = label_comma(),  limits = c(0,500000)) +
+  labs(y="Burn Acreage Calculated in GIS", title = "Burn Size (Acres) by Year")
+print(fire_size_plot)
 
 #i agree no outliers and no trend line!
 #what if we filter out to show fires 500,000+ to show just big fires?
 
-print(fire_size_plot)
+#made another version messing with the ylim, I honestly think the previous version (above) is better - but feel free to change things and lmk your thoughts!
+fire_size_plot2 <- CA_fires %>% 
+  ggplot(aes(y=GIS.Calculated.Acres, x=Year)) + 
+  geom_point(fill = 'firebrick3', color = 'darkred', alpha = 0.5) + 
+  scale_y_continuous(labels = label_comma(),  limits = c(25000,1100000)) +
+  labs(y="Burn Acreage Calculated in GIS", title = "Burn Size (Acres) by Year")
+
+print(fire_size_plot2)
 ```
+
 ```{r bar graph of fire causes, fig.cap = "Total Fires Started by Each Cause, 1950 - 2025"}
 fire_cause_count <- CA_fires %>% 
   ggplot(aes(x=Cause)) +
@@ -139,14 +156,27 @@ fire_cause_count <- CA_fires %>%
   geom_text(stat = 'count', 
             aes(label = after_stat(count)), 
             vjust = -0.5, size = 2)
-
 print(fire_cause_count)
 
 #i think we explain that this shows the overall count, then use it to show the top five in the next plot -  but should we exclude miscellanous and unidentified?
+  
+##I like the idea of showing the count but since there is such a variety in amounts the histogram looks kinda wonky. We could exclude misc and unident but then it doesnt make sense to include them in the next graph
+  ## I am remembering now that people said the finals for this class were graded sorta hard last semester with a lot of points taken for statistical choices / data visualization 
+    ## researching other chart types, this one is not perfect but I like that it kinda shows the distribution by year     similar to a box plot. Idk
 
+fire_cause_scatter <- CA_fires %>% 
+  ggplot(aes(y = Year, x = Cause)) + 
+  geom_point(color = 'firebrick3', alpha = 0.2, size = 2.5) + 
+  labs(y="Year", 
+       title = "Total Fires Started by Each Cause, 1950 - 2025") +
+  theme(axis.text.x = element_text(angle = 45, , vjust = 1, hjust = 1), legend.position = "none")
+  geom_text(stat = 'count', aes(label = after_stat(count)), vjust = -0.5, size = 2)
+print(fire_cause_scatter)
+
+#I wonder if there is a command that can show the top 5 causes by count & we can show the code #we could do that plus a box plot
 ```
 
-This plot reveals that the top five fire causes according to frequency are:
+This plot reveals that the top five most commonly observed fire causes are:
   1. Unidentified 
   2. Lightning
   3. Miscellaneous
@@ -155,22 +185,33 @@ This plot reveals that the top five fire causes according to frequency are:
 
 ```{r box plots of fire causes, fig.cap = "Changes in Frequency of the Top Five Fire Causes"}
 fire_cause_plot <- CA_fires %>% 
-  filter (Cause == "Unidenfitied" | Cause == "Lightning" | Cause == "Miscellaneous" | Cause == "Equipment Use" | Cause == "Arson") %>% 
+  filter (Cause == "Unidentified" | Cause == "Lightning" | Cause == "Miscellaneous" | Cause == "Equipment Use" | Cause == "Arson") %>% 
   count(Year, Cause) %>%  
   ggplot(aes(y=n, x=Year, color = Cause)) + 
-  geom_line(linewidth = 1) +
+  geom_line(linewidth = 0.75) +
   geom_point() +
-  scale_color_brewer(palette = 'RdYlBu') +
+  scale_color_brewer(palette = 'Paired') +
   labs(y="Cause of Fire", 
        x="Year",
-       title = "Changes in Frequency of the Top Five Fire Causes") 
-
+       title = "Changes in Frequency of the Top Five Fire Causes")  + 
+  theme(legend.position =  "right")
 print(fire_cause_plot)
+ ##I changed the colors and size to make it pop more #also there was a typo that prevented "unidentified" category from being included - its fixed now!
 
-#I like this because plot it shows that lightning is a big issue and is increasing so it is a good reason to focus on it for the rest of the report
-#change these colors?
+ #I wonder if we should plot these separately and then stack them; it would allow us to do trend lines which could help #see below 
+fire_cause_plot <- CA_fires %>% 
+  filter (Cause == "Lightning") %>% 
+  count(Year, Cause) %>%  
+  ggplot(aes(y=n, x=Year)) + 
+  geom_line(linewidth = 0.75, color = 'darkred') +
+  geom_point(color = 'darkred') +
+  geom_smooth(method = "lm", color = 'firebrick2') +
+  labs(y="Number of Fire Occurences", 
+       x="Year",
+       title = "Changes in Frequency of Fires Caused by Lightning Strikes")  + 
+  theme(legend.position =  "right")
+print(fire_cause_plot)
 ```
-
 This plot notably reveals that there appears to be an overall increasing trend in the fires caused by lightning, which is the second leading cause of fires in California. This informs our focus on fires caused by lightning for the remainder of the analysis.
 
 ```{r mapview, fig.cap="Map of Fires 1950 - 2025"}
@@ -180,14 +221,19 @@ fire_map <- ggplot(data = fires_shapefile) +
 
 print(fire_map)
 
+#I can't get this to run on mine, I don't know why
+
 ```
 
 # Hypotheses
 From this exploratory analysis, we developed the following hypotheses:
-  **1. The burn acreage of wildfires has increased over time.**
+  **1. The burn acreage of California wildfires has increased over time.**
+    Null hypothesis: There has been no change in burn acreage of California wildfires over time.
   (add null and alt hyp here?)
-  **2. The frequency of fires caused by lightning strikes has increased over time**
-   (add null and alt hyp here?)
+  **2. The frequency of California wildfires caused by lightning strikes has increased over time**
+    Null hypothesis: There has been no change in the frequency of California wildfires caused by lightning over time.
+   
+   (add null and alt hyp here?) - the alt hypothesis is the same as our stated hypothesis, do we need to specify it as 'alt?'
 
 # Analysis
 We will state our methods here
