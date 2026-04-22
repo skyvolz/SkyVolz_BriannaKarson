@@ -153,7 +153,7 @@ fire_cause_count <- CA_fires %>%
   geom_bar(fill = "firebrick3", color = "darkred") +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   labs(x = "Cause",
-       y = "Count of Fires",
+       y = "Number of Fires",
        title = "Total Fires Started by Each Cause, 1950 - 2025")
 
 print(fire_cause_count)
@@ -217,7 +217,7 @@ From this exploratory analysis, we developed the following hypotheses:
     Null hypothesis: There has been no change in the frequency of California wildfires caused by lightning over time.
 
 # Analysis
-We will state our methods here
+We will state our methods here - note about why tslm was chosen over lm
 
 Time Series Analysis: How has the burn acreage of wildfires changed over time?
   Area as the dependent variable
@@ -226,7 +226,7 @@ Time Series Analysis: How has the burn acreage of wildfires changed over time?
 
 ## Question One - Burn Acreage Over Time
 
-```{r burn acreage yearly time series plot, fig.cap="Time Series Plot: Yearly Burn Acreage Over Time"}
+```{r burn acreage yearly time series plot, fig.cap="Yearly Burn Acreage Over Time"}
 #adding up acres burned per year and checking that every year is in there
 fire_yearly <- CA_fires %>% 
   group_by(Year) %>% 
@@ -238,16 +238,27 @@ fire_acres_ts <- ts(fire_yearly$total_acres,
                     start = 1950,
                     end = 2025,
                     frequency = 1)
-plot(fire_acres_ts,
-     ylab = "Yearly Burn Acreage",
-     main = "Time Series Plot: Yearly Burn Acreage Over Time")
+
+fire_yearly_ts_plot <- fire_yearly %>%
+  ggplot(aes(x = Year , y = total_acres)) +
+  geom_line(color = 'darkred') +
+  geom_smooth(method = "lm", color = 'firebrick2') +
+  labs(y = "Yearly Burn Acreage",
+       title = "Yearly Burn Acreage Over Time")
+print(fire_yearly_ts_plot)
 ``` 
 
 ```{r burn acreage yearly time series linear regression}
 # can't decompose yearly sum because its not seasonal so running a linear regression
+# chose tslm over lm because tslm accounts for trends and lm does not
 fire_lm <- tslm(fire_acres_ts ~ trend)
 summary(fire_lm)
+
+#mann kendall
+non_seasonal_acreage <- MannKendall(fire_acres_ts)
+summary(non_seasonal_acreage)
 ```
+
 ```{r burn acreage monthly time series, fig.cap="Time Series Plot: Monthly Burn Acreage Over Time"}
 #now looking at monthly trend over time - seasonal so I can decompose it
 CA_fires_2 <- CA_fires %>% 
@@ -261,9 +272,13 @@ fire_monthly <- CA_fires_2 %>%
 
 #create time series
 monthly_acres_ts <- ts(fire_monthly$total_acres, start = c(1950, 1), frequency = 12)
-plot(monthly_acres_ts,
-     ylab = "Monthly Burn Acreage",
-     main = "Time Series Plot: Monthly Burn Acreage Over Time")
+
+fire_monthly_ts_plot <- fire_monthly %>%
+  ggplot(aes(x = Month , y = total_acres)) +
+  geom_line(color = 'darkred') +
+  labs(y = "Monthly Burn Acreage",
+       title = "Time Series Plot: Monthly Burn Acreage Over Time")
+print(fire_monthly_ts_plot)
 ```
 
 ```{r burn acreage monthly time series}
@@ -276,9 +291,6 @@ plot(monthly_acres_decomp,
 monthly_trend <- trend::smk.test(monthly_acres_ts)
 monthly_trend
 summary(monthly_trend)
-#I think this is how this is interpreted but idk - see below
-#plot this??
-
 ```
 
 from yearly trend linear regression:
@@ -295,60 +307,66 @@ from monthly trend decomp:
 This Seasonal Mann–Kendall test shows weak evidence of an increasing trend in monthly wildfire acreage over time (z = 1.648), but the trend is not statistically significant (p = 0.099). Seasonal decomposition doesn't show a strong trend within individual months, but some of the summer months have slightly positive but non-significant increases. For example, July (tau = 0.148). These results show variability and occasional increases in wildfire activity, but not a large, consistent seasonal trend across all months. This contrasts with the trend shown when looking at yearly fire acreage.
 
 ## Question Two - Lightning Frequency Over Time
-```{r lightning yearly time series, fig.cap = "Yearly Occurences of Fires Caused by Lightning Over Time"}
+```{r lightning yearly time series, fig.cap = "Yearly Number of Fires Caused by Lightning"}
 
 lightning_fire_yearly <- CA_fires %>% 
   filter (Cause == "Lightning") %>% 
   mutate(Year = as.factor(Year)) %>%
   group_by(Year) %>% 
-  summarise(count = n()) #%>%  # = sum(GIS.Calculated.Acres, na.rm = TRUE)) %>% 
-  #complete(Year = 1950:2025)
-
-  summarise(count = n())
+  mutate(Year = as.Date(Year, format = "%Y"))  %>%
+  summarise(count = n()) 
 
 #creating annual time series
-lightning_fire_acres_ts <- ts(lightning_fire_yearly,
+lightning_fire_yearly_ts <- ts(lightning_fire_yearly,
                     start = 1950,
                     end = 2025,
                     frequency = 1)
 
-ggplot(lightning_fire_acres_ts
-     ylab = "Yearly Occurances of Fires Caused by Lightning",
-     title = "Yearly Occurences of Fires Caused by Lightning Over Time")
+#removing time series plot because it matches the one from our exploratory analysis
 
-#running linear model since it is not seasonal 
-lightning_lm <- tslm(lightning_fire_acres_ts ~ trend)
-summary(lightning_lm)
+#mann kendall
+non_seasonal_lightning <- MannKendall(lightning_fire_yearly_ts)
+summary(non_seasonal_lightning)
 ```
 
 ```{r lightning monthly time series}
 #now looking at monthly trend over time - seasonal so I can decompose it
-CA_fires_lightning <- CA_fires %>% 
+lightning_fire_monthly <- CA_fires %>% 
   filter (Cause == "Lightning") %>% 
   mutate(Alarm.Date = as.Date(Alarm.Date)) %>%
   mutate(Month = floor_date(Alarm.Date, unit = "month")) %>% #creates a monthly grouping
   group_by(Month) 
 
-#creatly monthly sum
-lightning_fire_monthly <- CA_fires_lightning %>%
-  summarise(total_count = sum(CA_fires_lightning$Cause, na.rm = TRUE)) %>%ungroup()
+#create monthly sum
+lightning_fire_monthly <- lightning_fire_monthly %>%
+  summarise(count = n())
+
+#creating data frame
+Month <- as.data.frame(seq(from = as.Date("1950-05-01"),
+                           to = as.Date("2025-01-01"), by = "month"))
+
+#renaming column
+Month <- rename(Month, 'Month' = 'seq(from = as.Date(\"1950-05-01\"), to = as.Date(\"2025-01-01\"), by = \"month\")')
+
+#joining
+lightning_fire_monthly_join <- left_join(Month, lightning_fire_monthly, by = "Month")
+
+#linear interpolation
+lightning_fire_monthly_join$count <- na.approx(lightning_fire_monthly_join$count)
 
 #create time series
-lightning_monthly_acres_ts <- ts(lightning_fire_monthly$total_acres, start = c(1950, 1), frequency = 12)
-plot(lightning_monthly_acres_ts)
+lightning_monthly_ts <- ts(lightning_fire_monthly_join$count, start = c(1950, 1), frequency = 12)
+plot(lightning_monthly_ts)
 
 #decompose
-lightning_monthly_acres_decomp <- stl(lightning_monthly_acres_ts, s.window = "periodic")
-plot(lightning_monthly_acres_decomp)
-#not sure how to interpret this 
+lightning_monthly_decomp <- stl(lightning_monthly_ts, s.window = "periodic")
+plot(lightning_monthly_decomp)
+
 
 #seasonal = running seasonal mann-kendall test for trends
-lightning_monthly_trend <- trend::smk.test(lightning_monthly_acres_ts)
+lightning_monthly_trend <- trend::smk.test(lightning_monthly_ts)
 lightning_monthly_trend
 summary(lightning_monthly_trend)
-#I think this is how this is interpreted but idk - see below
-#plot this??
-
 ```
 
 # Results
