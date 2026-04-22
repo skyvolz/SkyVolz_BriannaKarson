@@ -77,6 +77,7 @@ CA_fires <- CA_fires %>%
 
 #reading in shapefile
 #fires_shapefile <- st_read("Data/raw/California_Fire_Perimeters_(1950+).shp")
+#submit link here
 
 #save this processed data table to processed folder - idk why this wont work
 write.csv(CA_fires, file=here("./Data/processed/CA_fires.csv"))
@@ -298,7 +299,7 @@ This Seasonal Mann–Kendall test shows weak evidence of an increasing trend in 
 
 lightning_fire_yearly <- CA_fires %>% 
   filter (Cause == "Lightning") %>% 
-  mutate(Year = as.Date(Year)) %>%
+  mutate(Year = as.factor(Year)) %>%
   group_by(Year) %>% 
   summarise(count = n()) #%>%  # = sum(GIS.Calculated.Acres, na.rm = TRUE)) %>% 
   #complete(Year = 1950:2025)
@@ -310,9 +311,10 @@ lightning_fire_acres_ts <- ts(lightning_fire_yearly,
                     start = 1950,
                     end = 2025,
                     frequency = 1)
-plot(lightning_fire_acres_ts,
+
+ggplot(lightning_fire_acres_ts
      ylab = "Yearly Occurances of Fires Caused by Lightning",
-     main = "Yearly Occurences of Fires Caused by Lightning Over Time")
+     title = "Yearly Occurences of Fires Caused by Lightning Over Time")
 
 #running linear model since it is not seasonal 
 lightning_lm <- tslm(lightning_fire_acres_ts ~ trend)
