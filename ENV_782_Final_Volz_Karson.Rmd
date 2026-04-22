@@ -28,13 +28,9 @@ This dataset is sourced from the California Natural Resources Agency GIS databas
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 #loading packages 
-library(tidyverse)
-library(dplyr)
-library(here)
-library(sf)
-library(ggplot2)
-library(scales)
-library(ggbeeswarm)
+library(tidyverse); library(dplyr); library(here); library(lubridate)
+library(sf); library(ggplot2); library(scales); library(ggbeeswarm)
+library(trend); library(zoo); library(Kendall); library(tseries)
 
 #set working directory
 here()
@@ -81,7 +77,8 @@ CA_fires <- CA_fires %>%
 
 #reading in shapefile
 fires_shapefile <- st_read("Data/raw/California_Fire_Perimeters_(1950+).shp")
-#for some reason I can't access this #it's not in the folder for me
+#for some reason I can't access this #it's not in the folder for me 
+# mine says the same thing - maybe we should ask john
 
 #save this processed data table to processed folder - idk why this wont work
 write.csv(CA_fires, file=here("/home/Workspace/Gits/SkyVolz_BriannaKarson/Data/processed"))
@@ -98,8 +95,6 @@ mytheme <- theme_bw(base_size = 12) +
         plot.title = element_text(face = "bold"))
 theme_set(mytheme)
 
-#should we hide this code? 
-  #yes! I think I hid it
 ```
 
 ```{r data summary, include = TRUE}
@@ -122,6 +117,8 @@ fire_count_plot <- CA_fires %>%
 
 print(fire_count_plot)
 ```
+
+notes on changes in frequency
 
 ```{r scatter plot of fire burn size, fig.cap = "Burn Size (Acres) by Year"}
 
@@ -147,22 +144,9 @@ fire_size_plot2 <- CA_fires %>%
 print(fire_size_plot2)
 ```
 
-```{r bar graph of fire causes, fig.cap = "Total Fires Started by Each Cause, 1950 - 2025"}
-fire_cause_count <- CA_fires %>% 
-  ggplot(aes(x=Cause)) +
-  geom_bar(fill = 'firebrick3', color = 'darkred') + 
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  labs(y = "Count", title = "Total Fires Started by Each Cause, 1950 - 2025") +
-  geom_text(stat = 'count', 
-            aes(label = after_stat(count)), 
-            vjust = -0.5, size = 2)
-print(fire_cause_count)
+notes on fire size plot
 
-#i think we explain that this shows the overall count, then use it to show the top five in the next plot -  but should we exclude miscellanous and unidentified?
-  
-##I like the idea of showing the count but since there is such a variety in amounts the histogram looks kinda wonky. We could exclude misc and unident but then it doesnt make sense to include them in the next graph
-  ## I am remembering now that people said the finals for this class were graded sorta hard last semester with a lot of points taken for statistical choices / data visualization 
-    ## researching other chart types, this one is not perfect but I like that it kinda shows the distribution by year     similar to a box plot. Idk
+```{r, fig.cap = "Total Fires Started by Each Cause, 1950 - 2025"}
 
 fire_cause_scatter <- CA_fires %>% 
   ggplot(aes(y = Year, x = Cause)) + 
@@ -171,7 +155,24 @@ fire_cause_scatter <- CA_fires %>%
        title = "Total Fires Started by Each Cause, 1950 - 2025") +
   theme(axis.text.x = element_text(angle = 45, , vjust = 1, hjust = 1), legend.position = "none")
   geom_text(stat = 'count', aes(label = after_stat(count)), vjust = -0.5, size = 2)
+  
 print(fire_cause_scatter)
+```
+
+This scatterplot is helpful because it shows wildfire events by ignition cause over time, with each point representing a single fire from 1950–2025. Denser vertical groupings indicate causes that occur more frequently, while sparser columns represent less common ignition sources. Causes that span the full time range appear persistent across decades (Debris and Equipment Use), whereas those concentrated in certain periods (Vehicles and Powerlines) suggest more episodic occurrence or changing patterns over time.
+
+```{r bar graph of fire causes, fig.cap = "Total Fires Started by Each Cause, 1950 - 2025"}
+
+fire_cause_count <- CA_fires %>% 
+  ggplot(aes(x = fct_infreq(Cause))) +
+  geom_bar(fill = "firebrick3", color = "darkred") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(
+    x = "Cause",
+    y = "Count",
+    title = "Total Fires Started by Each Cause, 1950 - 2025")
+
+print(fire_cause_count)
 
 #I wonder if there is a command that can show the top 5 causes by count & we can show the code #we could do that plus a box plot
 ```
@@ -182,6 +183,8 @@ This plot reveals that the top five most commonly observed fire causes are:
   3. Miscellaneous
   4. Equipment Use
   5. Arson
+  
+Notes on what the unidentified and miscellanous sections are why they might be in the top 5
 
 ```{r box plots of fire causes, fig.cap = "Changes in Frequency of the Top Five Fire Causes"}
 fire_cause_plot <- CA_fires %>% 
@@ -196,9 +199,11 @@ fire_cause_plot <- CA_fires %>%
        title = "Changes in Frequency of the Top Five Fire Causes")  + 
   theme(legend.position =  "right")
 print(fire_cause_plot)
- ##I changed the colors and size to make it pop more #also there was a typo that prevented "unidentified" category from being included - its fixed now!
+```
 
- #I wonder if we should plot these separately and then stack them; it would allow us to do trend lines which could help #see below 
+This plot notably reveals that there appears to be an overall increasing trend in the fires caused by lightning, which is the second leading cause of fires in California. In the following plot, we focused in on the trend in lighting-caused fires, and there is a clear increase. This informs our focus on fires caused by lightning for the remainder of the analysis.
+
+```{r box plots of fire causes, fig.cap = "Changes in Frequency of the Top Five Fire Causes"}
 fire_cause_plot <- CA_fires %>% 
   filter (Cause == "Lightning") %>% 
   count(Year, Cause) %>%  
@@ -211,8 +216,9 @@ fire_cause_plot <- CA_fires %>%
        title = "Changes in Frequency of Fires Caused by Lightning Strikes")  + 
   theme(legend.position =  "right")
 print(fire_cause_plot)
+
+#love this!!
 ```
-This plot notably reveals that there appears to be an overall increasing trend in the fires caused by lightning, which is the second leading cause of fires in California. This informs our focus on fires caused by lightning for the remainder of the analysis.
 
 ```{r mapview, fig.cap="Map of Fires 1950 - 2025"}
 # visualize overlapping fire areas using symbology to show where fires are concentrated
@@ -223,6 +229,8 @@ print(fire_map)
 
 #I can't get this to run on mine, I don't know why
 
+#need to add state of CA as a background to see the highlighted areas
+
 ```
 
 # Hypotheses
@@ -232,20 +240,91 @@ From this exploratory analysis, we developed the following hypotheses:
   (add null and alt hyp here?)
   **2. The frequency of California wildfires caused by lightning strikes has increased over time**
     Null hypothesis: There has been no change in the frequency of California wildfires caused by lightning over time.
-   
-   (add null and alt hyp here?) - the alt hypothesis is the same as our stated hypothesis, do we need to specify it as 'alt?'
 
 # Analysis
 We will state our methods here
 
+Time Series Analysis: How has the burn acreage of wildfires changed over time?
+  Area as the dependent variable
+  Decomposition and trend analysis
+  **first looking at yearly, then monthly, to see if the change / increase is seasonal or overall**
+
 ## Question One - Burn Acreage Over Time
 ```{r burn acreage time series}
 
-#Time Series Analysis: How has the burn acreage of wildfires changed over time?
-  #Area as the dependent variable
-  #Decomposition and trend analysis
+#exploratory plot for the variables of interest - maybe move to exploratory section?
+ggplot(CA_fires, aes( x = Year, y = GIS.Calculated.Acres)) +
+  geom_line() +
+  geom_smooth()
+
+#adding up acres burned per year and checking that every year is in there
+fire_yearly <- CA_fires %>% 
+  group_by(Year) %>% 
+  summarise(total_acres = sum(GIS.Calculated.Acres, na.rm = TRUE)) %>% 
+  complete(Year = 1950:2025, fill = list(total_acres = 0))
+
+# creating annual time series
+fire_acres_ts <- ts(fire_yearly$total_acres,
+                    start = 1950,
+                    end = 2025,
+                    frequency = 1)
+plot(fire_acres_ts)
+
+# can't decompose yearly sum because its not seasonal so running a linear regression
+fire_lm <- tslm(fire_acres_ts ~ trend)
+summary(fire_lm)
+
+#show this with a plot
+acre_trend <- ggplot(fire_yearly, aes(x = Year, y = total_acres)) +
+  geom_line(color = "firebrick3", alpha = 0.6) +
+  geom_point(color = "firebrick3", size = 1.8) +
+  geom_smooth(method = "lm", se = TRUE, color = "darkred", linewidth = 1.2) +
+  labs(
+    title = "Annual Burned Acres in California with Linear Trend",
+    x = "Year",
+    y = "Total Acres Burned")
+print(acre_trend)
+
+#now looking at monthly trend over time - seasonal so I can decompose it
+CA_fires_2 <- CA_fires %>% 
+  mutate(Alarm.Date = as.Date(Alarm.Date)) %>%
+  mutate(Month = floor_date(Alarm.Date, unit = "month")) %>% #creates a monthly grouping
+  group_by(Month) 
+
+#creatly monthly sum
+fire_monthly <- CA_fires_2 %>%
+  summarise(total_acres = sum(GIS.Calculated.Acres, na.rm = TRUE)) %>%ungroup()
+
+#create time series
+monthly_acres_ts <- ts(fire_monthly$total_acres, start = c(1950, 1), frequency = 12)
+plot(monthly_acres_ts)
+
+#decompose
+monthly_acres_decomp <- stl(monthly_acres_ts, s.window = "periodic")
+plot(monthly_acres_decomp)
+#not sure how to interpret this 
+
+#seasonal = running seasonal mann-kendall test for trends
+monthly_trend <- trend::smk.test(monthly_acres_ts)
+monthly_trend
+summary(monthly_trend)
+#I think this is how this is interpreted but idk - see below
+#plot this??
+
 ```
 
+from yearly trend linear regression:
+  positive coefficent = increasing burned area over time
+  r2 = 0.1803 is explained in change in fire acres explained by time alone
+  p much <0.05 so statistically significant
+  also shown in graphing
+
+from monthly trend decomp:
+  remainder: large spikes = extreme fire events
+  trend: upward slope -> increasing fire severity over decades, sharp jumps -> major fire years / climate     shifts / policy changes?
+  seasonal: Stable pattern = consistent fire season year-to-year
+
+This Seasonal Mann–Kendall test shows weak evidence of an increasing trend in monthly wildfire acreage over time (z = 1.648), but the trend is not statistically significant (p = 0.099). Seasonal decomposition doesn't show a strong trend within individual months, but some of the summer months have slightly positive but non-significant increases. For example, July (tau = 0.148). These results show variability and occasional increases in wildfire activity, but not a large, consistent seasonal trend across all months. This contrasts with the trend shown when looking at yearly fire acreage.
 
 ## Question Two - Lightning Frequency Over Time
 ```{r lightning time series}
@@ -255,11 +334,13 @@ We will state our methods here
   #Decomposition and trend analysis
 ```
 
-# Summary and Conclusions
 # Results
+should this be sprinkled throughout, then restated here?
+# Summary and Conclusions
 # Discussion
 # Limitations
-see “Use Limitation” section in metadata
+see “Use Limitation” section in metadata 
+discuss the categories of miscellaneous and unidentified
 
 ## References
 Remember to cite dataset here 
