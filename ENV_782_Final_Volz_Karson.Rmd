@@ -1,5 +1,5 @@
 ---
-title: "ENV 782 Final - CA Wildfires"
+title: "Assessing Changes to California Wildfire Causes and Burn Areas Over Time"
 author: "Sky Volz and Brianna Karson"
 date: "2026-04-24"
 output: pdf_document
@@ -81,14 +81,16 @@ CA_boundary_shp <- st_read("Data/spatial/CA_State.shp")
 write.csv(CA_fires, file=here("./Data/processed/CA_fires.csv"))
 ```
 
-The following is a summary of column names and the first few rows of the dataset. 
+The following is a summary of the data's column names: 
 
 ```{r data summary, echo=FALSE}
 #View dimensions, column names, variable type, and head of each column:
 #str(CA_fires)
 
-head(CA_fires)
+colnames(CA_fires)
+
 #this prints really weird - maybe we just do the column names
+#head(CA_fires)
 ```
 
 \newpage
@@ -135,7 +137,7 @@ fire_size_plot <- CA_fires %>%
 print(fire_size_plot)
 ```
 
-This chart plots burn acreage over time, with the removal of a few outlier points. Though the majority of fires covers less than 50,000 acres, there appears to be an increase in points within the 300,000 to 500,000 burn acreage range since 1990. This is an indicator that California's wildfire burn acreage may be increasing over time.
+This chart plots burn acreage over time, with the removal of a few outlier points. Though the majority of fires covered less than 50,000 acres, there appears to be an increase in points within the 300,000 to 500,000 burn acreage range since 1990. This is an indicator that California's wildfire burn acreage may be increasing over time.
 
 \newpage
 ## Fire Causes
@@ -214,18 +216,18 @@ This map provides an overview of all fire burn areas for the past 75 years. Area
 \newpage
 
 # Analysis
-These analyses evaluate how wildfire activity has changed over time, focusing on total burned area and fires caused by lightning. For burned area, fire burn acreage was added up to get monthly and yearly totals. The data was then analyzed at both scales to see if any change over time could be attributed to seasonal patterns. For the yearly data, a Mann-Kendall test was conducted in order to detect the presence of monotonic trends.
+These analyses evaluate how wildfire activity has changed over time, focusing on total burned area and fires caused by lightning. For the burn acreage analysis, fire burn acreage was summed in order to provide monthly and yearly totals. The data was then analyzed at both scales to see if any change over time could be attributed to seasonal patterns. 
 
-For the monthly burned area data, a time series decomposition was used to split the data into trend, seasonal patterns, and random variation. A Seasonal Mann–Kendall test was run in order to test for seasonal trends in the data.
+For the yearly data, a Mann-Kendall test was conducted in order to detect the presence of monotonic trends. For the monthly data, a time series decomposition was used to analyze the data by trend, seasonal patterns, and random variation. A Seasonal Mann–Kendall test was run in order to identify seasonal trends in the monthly data.
 
-The same approach was used for lightning-caused fires. Monthly and yearly fire counts were summed and analyzed over time. The yearly data was evaluated using a Mann–Kendall test, since there is no seasonal pattern at that scale. Monthly data was again broken down using decomposition, and a Seasonal Mann–Kendall test was used to detect trends while accounting for seasonal changes.
+The same approach was used for lightning-caused fires, for which monthly and yearly fire counts were summed and analyzed over time. The yearly data was evaluated using a Mann–Kendall test, since there is no seasonal pattern at that scale. Monthly data was again broken down using decomposition, and a Seasonal Mann–Kendall test was used to detect trends while accounting for seasonal changes.
 
 ## Question 1: How has the size of wildfire burn areas of changed over time?
 Null hypothesis: There has been no significant change in burn acreage of California wildfires over time. \newline
 
 **Alternative Hypothesis: The burn acreage of California wildfires has significantly increased over time.** \newline
 
-The first analysis focuses on whether fire acreage in California has increased, either as a result of an increase in overall fires or an increase in geographically larger fires. A time series was created for the yearly burn acreage over time and then plotted. Then, a Mann Kendall test and linear regression were run in order to identify any trend in the yearly data. Finally, fire acreage was calculated per month to create a time series analysis focused on seasonal trend analysis.
+The first analysis focuses on whether fire acreage in California has increased, either as a result of an increase in overall fires or an increase in geographically larger fires. A time series was created for the yearly burn acreage over time and then plotted. Then, a Mann Kendall test and linear regression were run in order to identify any trend in the yearly data. Finally, fire acreage was calculated per month to create a time series analysis focused on seasonal trends.
 
 ### Burn Area Yearly Time Series
 ```{r burn acreage yearly time series plot, echo=FALSE, fig.cap="Time Series Plot: Yearly Burn Acreage Over Time", warning=FALSE, message=FALSE}
@@ -249,6 +251,8 @@ fire_yearly_ts_plot <- fire_yearly %>%
        title = "Time Series Plot: Yearly Burn Acreage Over Time")
 print(fire_yearly_ts_plot)
 ``` 
+This chart plots yearly fire burn acreage over time. The linear trend line notably reveals an upward slope, indicating a strong likelihood of a statistically significant upward trend in burn acreage over time. 
+
 \newpage
 
 ### Mann-Kendall
@@ -290,6 +294,7 @@ fire_monthly_ts_plot <- fire_monthly %>%
        title = "Time Series Plot: Monthly Burn Acreage Over Time")
 print(fire_monthly_ts_plot)
 ```
+This chart plots monthly fire burn acreage over time. The linear trend line shows a slight upward slope, indicating a possibility of a statistically significant upward trend in monthly burn acreage over time. 
 
 \newpage
 ### Decomposition
@@ -310,7 +315,7 @@ summary(monthly_trend)
 ```
 
 ### Summary
-The Seasonal Mann–Kendall test of monthly fire burn acreage demonstrates variability and occasional increases in wildfire activity, but no significant trend in fire burn area over time at the monthly scale once seasonality is accounted for. The monthly time series decomposition supports this: the trend component shows a gradual upward slope with occasional sharp jumps that reflect extreme fire years and major shifts in conditions, but the seasonal component shows a stable, repeating annual fire cycle, and the remainder highlights large spikes in activity that represent unusually severe fire events. This contrasts with the yearly fire acreage trend discussed below.
+The Seasonal Mann–Kendall test of monthly fire burn acreage demonstrates variability and occasional increases in wildfire activity, but no significant trend in fire burn area over time at the monthly scale once seasonality is accounted for. The monthly time series decomposition supports this: the trend component shows a gradual upward slope with occasional sharp jumps that reflect extreme fire years and major shifts in conditions, but the seasonal component shows a stable, repeating annual fire cycle, and the remainder plot highlights large spikes in activity that represent unusually severe fire events. This contrasts with the yearly fire acreage trend discussed below.
 
 The yearly fire burn area Mann-Kendall test and linear regression show a clear, statistically significant increase in burn acreage over time, with a positive coefficient denoting the increasing trend. The R² value of 0.1803 means that about 18% of the change in burn area sizes over time can be explained by time alone (p < 0.05). These results confirm the alternative hypothesis that the burn acreage of California wildfires has significantly increased over time.  Overall, the combined monthly and yearly results suggest that wildfire sizes are increasing over time, but much of the change is driven by long-term shifts and extreme fire events rather than a steady month-to-month increase. 
 
@@ -331,15 +336,15 @@ fire_cause_plot <- CA_fires %>%
   ggplot(aes(y=n, x=Year)) + 
   geom_line(linewidth = 0.75, color = 'darkred') +
   geom_point(color = 'darkred') +
-  geom_smooth(method = "lm", color = 'firebrick2') +
-  labs(y="Number of Fires", 
+  geom_smooth(method = "lm", color = 'firebrick3') +
+  labs(y="Yearly Number of Fires", 
        x="Year",
        title = "Number of Fires Caused by Lightning Strikes Over Time")  + 
   theme(legend.position =  "right")
 
 print(fire_cause_plot)
 ```
-
+This chart plots the yearly number of fires caused by lightning over time. The linear trend line has a notable upward slope, indicating a possible significant upward trend in lightning-caused fires over time. 
 
 ### Mann-Kendall
 ```{r lightning yearly time series, echo=FALSE, warning=FALSE,  error=FALSE, message=FALSE}
@@ -356,8 +361,6 @@ lightning_fire_yearly_ts <- ts(lightning_fire_yearly,
                     start = 1950,
                     end = 2025,
                     frequency = 1)
-
-#removing time series plot because it matches the one from our exploratory analysis
 
 #mann kendall
 non_seasonal_lightning <- MannKendall(lightning_fire_yearly_ts)
@@ -429,16 +432,16 @@ The decomposition of the monthly time series shows that lightning-caused fires f
 Overall, these results demonstrate that the number of California wildfires caused by lightning strikes has significantly increased over time at both a monthly and yearly scale, thus confirming the alternative hypothesis.
 
 # Conclusions
-what this means for fires in CA and our focus on climate change 
-maybe a policy recomendation or something??
-This can help determine if fire trends are related to increasing lightning storms as a result of climate change.
+This report found that the size of California wildfires has significantly increased over time, and that the number of wildfires caused by lightning strikes has also significantly increased over time, at both a monthly and yearly scale. Results of the time series decomposition point to increasingly extreme fire events as a possible driver of the increase in burn acreage. Further analysis investigating the causes of these larger, extreme fire events may be useful in developing a more in depth understanding of the trend. Additional analyses investigating whether the increase in lightning-caused fires can be attributed to a greater frequency of electrical storms or higher quantities of dry fire fuels may prove extremely useful for fire management strategy, and can help empirically link these observed trends to global climate change. Overall, the trends identified in this report paint a picture of the rapidly shifting Californian fire ecology, highlighting the need for proactive, scientifically-backed management strategies to mitigate the effects of a changing climate and protect diverse taxa, ecosystems, and ways of life. 
 
 # Limitations
-It is noted in the metadata for this dataset that there are a number of fires missing from these records, mostly during the first few decades of data collection. As a result, certain trend analyses may present differently than if fire from the lats 75 years was able to be included. This is important to note when drawing conclusions from the data, particularly when focusing the on yearly and monthly fire acreage. 
+It is noted in the metadata for this dataset that there are a number of fires missing from these records, mostly during the first few decades of the data. As a result, certain trend analyses may present slightly differently than they would if every fire from the last 75 years was able to be included. This is important to note when drawing conclusions from the data, particularly when focusing the on yearly and monthly fire acreage. 
 
-The two categories of "Unidentified" and "Miscellaneous" also present a degree of limitation due to a lack of specificity. It would be interesting to run the exploratory analyses again, if the fires in these categories were able to be grouped correctly by their specific causes. 
+The two categories of "Unidentified" and "Miscellaneous" also present a degree of limitation due to a lack of specificity. It would be interesting to run the exploratory analyses again if the fires in these categories were able to be grouped correctly by their specific causes. 
 
 ## References
+Github Repository: https://github.com/skyvolz/SkyVolz_BriannaKarson \newline
+
 Fire Data: \newline
 URL: https://gis.data.cnra.ca.gov/datasets/CALFIRE-Forestry::california-fire-perimeters-1950/about \newline 
 Citation Title: Fire Perimeters (firep24_1) \newline 
